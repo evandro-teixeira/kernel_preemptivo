@@ -16,6 +16,7 @@
 #include "gpio.h"
 #include "main.h"
 #include "usart.h"
+#include "../kernel/kernel.h"
 
 #define TIME_LED_BLUE	10
 #define TIME_LED_GREEN	10
@@ -27,6 +28,6 @@
 void app_task_led_green(void *parameters);
 void app_task_led_blue(void *parameters);
 void app_task_push_button(void *parameters);
-void app_task_ilde(void *parameters);
+void app_task_idle(void *parameters);
 
 #endif /* APP_APP_H_ */

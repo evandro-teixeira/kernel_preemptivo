@@ -21,7 +21,7 @@
 #include "usart.h"
 
 /* USER CODE BEGIN 0 */
-
+#include <string.h>
 /* USER CODE END 0 */
 
 UART_HandleTypeDef huart1;
@@ -105,7 +105,9 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef* uartHandle)
 void MX_USART1_UART_String(char *txt)
 {
 	uint16_t size = strlen(txt);
-	HAL_UART_Transmit(&huart1,(uint8_t*)txt,size,1000);
+	__asm volatile 	( " cpsid i " );
+	HAL_UART_Transmit(&huart1,(uint8_t*)txt,size,10);
+	__asm volatile 	( " cpsie i " );
 }
 /* USER CODE END 1 */
 

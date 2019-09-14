@@ -106,8 +106,8 @@ bool Kernel_Start(uint32_t systick_ticks)
 		return false;
 	}
 
-	NVIC_SetPriority(PendSV_IRQn, 0xff);
-	NVIC_SetPriority(SysTick_IRQn, 0x00);
+	NVIC_SetPriority(PendSV_IRQn, 0x00);
+	NVIC_SetPriority(SysTick_IRQn, 0xff);
 
 	//kernel_curr_task = &m_task_table.tasks[m_task_table.current_task];
 
@@ -129,6 +129,8 @@ bool Kernel_Start(uint32_t systick_ticks)
  */
 void Kernel_Context_Switch(void)
 {
+	KERNEL_DISABLE_INTERRUPTS();
+	//__asm volatile 	( " cpsie i " );
 	kernel_curr_task = &m_task_table.tasks[m_task_table.current_task];
 //	kernel_curr_task->status = Waiting;
 
@@ -141,8 +143,10 @@ void Kernel_Context_Switch(void)
 //	kernel_next_task = &m_task_table.tasks[m_task_table.current_task];
 
 	kernel_next_task = Kernel_scheduler();
-//	kernel_next_task->status = Waiting;
 
+	KERNEL_ENABLE_INTERRUPTS();
+//	kernel_next_task->status = Waiting;
+	//__asm volatile 	( " cpsid i " );
 	// Trigger PendSV which performs the actual context switch:
 	SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk;
 }
@@ -259,7 +263,7 @@ volatile TaskStr *Kernel_scheduler(void)
  *
  *
  */
-void kernel_add_task_ilde(ptrTask task)
+void kernel_add_task_idle(ptrTask task)
 {
 	if(task != KERNEL_NULL)
 	{
@@ -279,7 +283,7 @@ void Kernel_Task_Idle(void *parameters)
 		{
 			idleTask(KERNEL_NULL);
 		}
-		Kernel_Release();
+		//Kernel_Release();
 	}
 }
 
@@ -289,8 +293,10 @@ void Kernel_Task_Idle(void *parameters)
  */
 void Kernel_Delay(uint32_t tick)
 {
+	KERNEL_DISABLE_INTERRUPTS();
 	m_task_table.tasks[m_task_table.current_task].ticks = tick;
 	m_task_table.tasks[m_task_table.current_task].state = Paused;
+	KERNEL_ENABLE_INTERRUPTS();
 	Kernel_Release();
 }
 
@@ -305,13 +311,22 @@ void Kernel_Systick_Callback(void)
 
 	for(index=1; index < m_task_table.size; index++)
 	{
-		if(m_task_table.tasks[index].ticks > 0)
+		if(m_task_table.tasks[index].state == Paused)
 		{
-			m_task_table.tasks[index].ticks--;
-		}
-		else
-		{
-			m_task_table.tasks[index].state = Ready;
+			if(m_task_table.tasks[index].ticks > 0)
+			{
+				m_task_table.tasks[index].ticks--;
+			}
+			else
+			{
+				m_task_table.tasks[index].state = Ready;
+				if(m_task_table.tasks[m_task_table.current_task].priority <
+				   m_task_table.tasks[index].priority)
+				{
+					//Kernel_Release();
+					Kernel_Context_Switch();
+				}
+			}
 		}
 	}
 }

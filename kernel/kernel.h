@@ -20,6 +20,9 @@
 
 #define KERNEL_ID_IDLE				0
 
+#define KERNEL_DISABLE_INTERRUPTS()	__asm volatile 	( " cpsid i " )
+#define KERNEL_ENABLE_INTERRUPTS()	__asm volatile 	( " cpsie i " )
+
 #ifndef KERNEL_NULL
 #define KERNEL_NULL ((void *)0)
 #endif
@@ -99,7 +102,7 @@ void Kernel_PendSV_Callback(void);
 void Kernel_Systick_Callback(void);
 void Kernel_SVC_Callback(void);
 void Kernel_Release(void);
-void kernel_add_task_ilde(ptrTask task);
+void kernel_add_task_idle(ptrTask task);
 void Kernel_Delay(uint32_t tick);
 
 #endif /* KERNEL_KERNEL_H_ */
