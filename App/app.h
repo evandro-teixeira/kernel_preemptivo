@@ -15,10 +15,10 @@
 #include "stm32f0xx_hal.h"
 #include "gpio.h"
 #include "main.h"
+#include "usart.h"
 
-
-#define TIME_LED_BLUE	500
-#define TIME_LED_GREEN	1000
+#define TIME_LED_BLUE	10
+#define TIME_LED_GREEN	10
 
 #define SIZE_TASK_LED_GREEN		(uint32_t)(128*2)
 #define SIZE_TASK_LED_BLUE		(uint32_t)(128*2)

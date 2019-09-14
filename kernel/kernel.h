@@ -46,8 +46,8 @@ typedef void (*ptrTask)(void *p_params) ;
 */
 typedef enum
 {
-	KERNEL_TASK_STATUS_IDLE = 1,
-	KERNEL_TASK_STATUS_ACTIVE,
+	Running = 1,
+	Waiting,
 }TaskStatus;
 
 typedef enum

@@ -29,6 +29,7 @@ void app_task_push_button(void *parameters)
 	//uint32_t i = 0;
 	while(1)
 	{
+		MX_USART1_UART_String("\n\rTarefa A");
 		if(HAL_GPIO_ReadPin(GPIOA,B1_Pin) == GPIO_PIN_SET)
 		{
 			//for(i=0;i<10000;i++);
@@ -38,7 +39,7 @@ void app_task_push_button(void *parameters)
 			//}
 		}
 		//Kernel_Release();
-		Kernel_Delay(100);
+		Kernel_Delay(10);
 	}
 }
 
@@ -49,6 +50,7 @@ void app_task_led_green(void *parameters)
 
 	while(1)
 	{
+		MX_USART1_UART_String("\n\rTarefa B");
 		//time_delay++;
 		//if(time_delay >= i)
 		//{
@@ -67,6 +69,7 @@ void app_task_led_blue(void *parameters)
 
 	while(1)
 	{
+		MX_USART1_UART_String("\n\rTarefa C");
 		//if(app_flag_push_button_get() == true)
 		//{
 			//app_flag_push_button_set(false);
@@ -84,5 +87,5 @@ void app_task_ilde(void *parameters)
 	static uint32_t i = 0;
 
 	i++;
-
+	MX_USART1_UART_String("\n\rTarefa Ilde");
 }

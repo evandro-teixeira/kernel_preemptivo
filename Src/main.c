@@ -93,10 +93,11 @@ int main(void)
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
 
+  MX_USART1_UART_String("\n\r TEste");
   Kernel_Init();
 
-  Kernel_Add_Task(&app_task_push_button,NULL,SIZE_TASK_PUSH_BUTTON,High);
-  Kernel_Add_Task(&app_task_led_green,(void*)TIME_LED_GREEN,SIZE_TASK_LED_GREEN,Medium);
+  Kernel_Add_Task(&app_task_push_button,NULL,SIZE_TASK_PUSH_BUTTON,Low);
+  Kernel_Add_Task(&app_task_led_green,(void*)TIME_LED_GREEN,SIZE_TASK_LED_GREEN,Low);
   Kernel_Add_Task(&app_task_led_blue,(void*)TIME_LED_BLUE,SIZE_TASK_LED_BLUE,Low);
 
   kernel_add_task_ilde(&app_task_ilde);

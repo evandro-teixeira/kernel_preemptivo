@@ -17,6 +17,8 @@ volatile TaskStr *kernel_curr_task;
 volatile TaskStr *kernel_next_task;
 ptrTask idleTask = KERNEL_NULL;
 static uint32_t kernel_tick;
+uint32_t Kernel_IncVar(uint32_t var, uint32_t lim);
+
 /**
  *
  *
@@ -62,7 +64,7 @@ bool Kernel_Add_Task(void (*handler)(void *p_params), void *p_task_params,uint32
 	p_task->handler 			= handler;
 	p_task->p_params 			= p_task_params;
 	p_task->sp 					= (uint32_t)(stack_size+stack_offset-16);
-	p_task->status 				= KERNEL_TASK_STATUS_IDLE;
+	p_task->status 				= Waiting;
 	p_task->priority            = priority;
 	p_task->ticks 				= 0;
 	p_task->state				= Ready;
@@ -128,7 +130,7 @@ bool Kernel_Start(uint32_t systick_ticks)
 void Kernel_Context_Switch(void)
 {
 	kernel_curr_task = &m_task_table.tasks[m_task_table.current_task];
-	kernel_curr_task->status = KERNEL_TASK_STATUS_IDLE;
+//	kernel_curr_task->status = Waiting;
 
 //	// Select next task:
 //	m_task_table.current_task++;
@@ -139,7 +141,7 @@ void Kernel_Context_Switch(void)
 //	kernel_next_task = &m_task_table.tasks[m_task_table.current_task];
 
 	kernel_next_task = Kernel_scheduler();
-	kernel_next_task->status = KERNEL_TASK_STATUS_ACTIVE;
+//	kernel_next_task->status = Waiting;
 
 	// Trigger PendSV which performs the actual context switch:
 	SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk;
@@ -155,6 +157,21 @@ void Kernel_Release(void)
 	__asm volatile("SVC 0\n\t");
 }
 
+/**
+ *
+ */
+uint32_t Kernel_IncVar(uint32_t var, uint32_t lim)
+{
+	if(var < lim)
+	{
+		var++;
+	}
+	else
+	{
+		var = 1;
+	}
+	return var;
+}
 
 /**
  *
@@ -162,24 +179,38 @@ void Kernel_Release(void)
  */
 volatile TaskStr *Kernel_scheduler(void)
 {
+	static uint8_t index_high = 0;
+	static uint8_t index_Medium = 0;
+	static uint8_t index_Low = 0;
 	volatile TaskStr *task;
 	uint32_t index = 0;
 
 	// Busca tarefa de Alta prioridade pronta para ser executada
 	for(index=1; index < m_task_table.size; index++)
 	{
-		if((m_task_table.tasks[index].state == Ready) && (m_task_table.tasks[index].priority == High))
+		index_high = (uint8_t)Kernel_IncVar(index_high, m_task_table.size);
+		if((m_task_table.tasks[index_high].state == Ready) &&
+		   (m_task_table.tasks[index_high].priority == High) &&
+		   (m_task_table.tasks[index_high].status == Waiting ))
 		{
+			m_task_table.tasks[index_high].status = Running;
+			index = index_high;
 			break;
 		}
+		//index_high++;
 	}
 	if(index >= (m_task_table.size))
 	{
 		// Busca tarefa de Media prioridade pronta para ser executada
 		for(index=1; index < m_task_table.size; index++)
 		{
-			if((m_task_table.tasks[index].state == Ready) && (m_task_table.tasks[index].priority == Medium))
+			index_Medium = (uint8_t)Kernel_IncVar(index_Medium, m_task_table.size);
+			if((m_task_table.tasks[index_Medium].state == Ready) &&
+			   (m_task_table.tasks[index_Medium].priority == Medium) &&
+			   (m_task_table.tasks[index_Medium].status == Waiting ))
 			{
+				m_task_table.tasks[index_Medium].status = Running;
+				index = index_Medium;
 				break;
 			}
 		}
@@ -188,8 +219,13 @@ volatile TaskStr *Kernel_scheduler(void)
 			// Busca tarefa de Baixa prioridade pronta para ser executada
 			for(index=1; index < m_task_table.size; index++)
 			{
-				if((m_task_table.tasks[index].state == Ready) && (m_task_table.tasks[index].priority == Low))
+				index_Low = (uint8_t)Kernel_IncVar(index_Low, m_task_table.size);
+				if((m_task_table.tasks[index_Low].state == Ready) &&
+				   (m_task_table.tasks[index_Low].priority == Low) &&
+				   (m_task_table.tasks[index_Low].status == Waiting ))
 				{
+					m_task_table.tasks[index_Low].status = Running;
+					index = index_Low;
 					break;
 				}
 			}
@@ -197,45 +233,22 @@ volatile TaskStr *Kernel_scheduler(void)
 			{
 				index = KERNEL_ID_IDLE;
 			}
+			else
+			{
+				m_task_table.tasks[index].status = Waiting;
+			}
 		}
+		else
+		{
+			m_task_table.tasks[index].status = Waiting;
+		}
+	}
+	else
+	{
+		m_task_table.tasks[index].status = Waiting;
 	}
 
-/*
-	// Busca tarefa de alta prioridade pronta para ser executada
-	for(index=1; index < m_task_table.size; index++)
-	{
-		if((m_task_table.tasks[index].priority == High) && (m_task_table.tasks[index].state == Ready))
-		{
-			break;
-		}
-	}
-	if(index > (m_task_table.size))
-	{
-		// Busca tarefa de media prioridade para ser executada
-		for(index=1; index < m_task_table.size; index++)
-		{
-			if((m_task_table.tasks[index].priority == Medium) && (m_task_table.tasks[index].state == Ready))
-			{
-				break;
-			}
-		}
-		if(index > (m_task_table.size))
-		{
-			// Busca tarefa de baixa prioridade para ser executada
-			for(index=1; index < m_task_table.size; index++)
-			{
-				if((m_task_table.tasks[index].priority == Low) && (m_task_table.tasks[index].state == Ready))
-				{
-					break;
-				}
-			}
-			if(index > (m_task_table.size))
-			{
-				index = KERNEL_ID_IDLE;
-			}
-		}
-	}
-*/
+	//m_task_table.tasks[m_task_table.current_task].status = Waiting;
 	m_task_table.current_task = index;
 	task =&m_task_table.tasks[m_task_table.current_task];
 	return task;
